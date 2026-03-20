@@ -21,6 +21,22 @@ const prisma = createPrismaClient();
 async function main() {
   console.log('🌱 Seeding database...');
 
+  console.log('🧹 Clearing data...');
+  await prisma.booking.deleteMany();
+  await prisma.room.deleteMany();
+  await prisma.user.deleteMany();
+
+  console.log('👤 Creating test user...');
+  const user = await prisma.user.create({
+    data: {
+      email: 'test@example.com',
+      passwordHash: 'hashed-password-for-now',
+      fullName: 'Test User',
+    },
+  });
+
+  console.log(`✅ Created user: ${user.id}`);
+
   const rooms = [
     {
       name: 'Sea View Room',
@@ -59,18 +75,19 @@ async function main() {
     },
   ];
 
-  console.log('🧹 Clearing rooms...');
-  await prisma.room.deleteMany();
-
   console.log('🏨 Creating rooms...');
   await prisma.room.createMany({
     data: rooms,
   });
 
+  const userCount = await prisma.user.count();
   const roomCount = await prisma.room.count();
+  const bookingCount = await prisma.booking.count();
 
   console.log('\n📊 Database Summary:');
+  console.log(`   Users: ${userCount}`);
   console.log(`   Rooms: ${roomCount}`);
+  console.log(`   Bookings: ${bookingCount}`);
   console.log('\n✅ Seed complete!');
 }
 
