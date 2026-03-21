@@ -10,8 +10,8 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 export class BookingsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createBooking(dto: CreateBookingDto) {
-    const { userId, roomId, checkIn, checkOut } = dto;
+  async createBooking(userId: string, dto: CreateBookingDto) {
+    const { roomId, checkIn, checkOut } = dto;
 
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
