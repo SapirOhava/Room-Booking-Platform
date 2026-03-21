@@ -11,3 +11,7 @@ export function setToken(token: string) {
 export function removeToken() {
   localStorage.removeItem(TOKEN_KEY);
 }
+
+export function isAuthenticated() {
+  return !!getToken();
+}
