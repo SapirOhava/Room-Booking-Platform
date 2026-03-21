@@ -7,7 +7,7 @@ export class RoomsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async searchRooms(query: SearchRoomsQueryDto) {
-    const { city, guests } = query;
+    const { city, guests, minPrice, maxPrice } = query;
 
     return this.prisma.room.findMany({
       where: {
@@ -23,6 +23,14 @@ export class RoomsService {
           ? {
               capacity: {
                 gte: guests,
+              },
+            }
+          : {}),
+        ...(minPrice !== undefined || maxPrice !== undefined
+          ? {
+              pricePerNight: {
+                ...(minPrice !== undefined ? { gte: minPrice } : {}),
+                ...(maxPrice !== undefined ? { lte: maxPrice } : {}),
               },
             }
           : {}),
