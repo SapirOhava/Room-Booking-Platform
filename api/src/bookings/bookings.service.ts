@@ -60,14 +60,28 @@ export class BookingsService {
 
     const totalPrice = Number(room.pricePerNight) * nights;
 
-    return this.prisma.booking.create({
-      data: {
-        userId,
-        roomId,
-        checkIn: checkInDate,
-        checkOut: checkOutDate,
-        totalPrice,
-      },
-    });
+    try {
+      return await this.prisma.booking.create({
+        data: {
+          userId,
+          roomId,
+          checkIn: checkInDate,
+          checkOut: checkOutDate,
+          totalPrice,
+        },
+      });
+    } catch (error: any) {
+      const message = String(error?.message ?? '');
+
+      if (message.includes('booking_no_overlap')) {
+        throw new BadRequestException('Room is not available for these dates');
+      }
+
+      if (message.includes('booking_check_dates')) {
+        throw new BadRequestException('checkOut must be after checkIn');
+      }
+
+      throw error;
+    }
   }
 }
