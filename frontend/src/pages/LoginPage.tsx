@@ -1,17 +1,31 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+
 import { loginUser } from "../api/auth";
+import { getErrorMessage } from "../utils/getErrorMessage";
 import { setToken } from "../utils/token";
 import type { LoginFormData } from "../types";
-import { getErrorMessage } from "../utils/getErrorMessage";
+
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [serverError, setServerError] = useState("");
 
-  const successMessage = location.state?.successMessage || "";
+  const successMessage =
+    (location.state as { successMessage?: string } | null)?.successMessage ||
+    "";
 
   const {
     register,
@@ -33,73 +47,78 @@ function LoginPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md rounded-lg bg-white p-6 shadow">
-      <h1 className="mb-6 text-2xl font-bold">Login</h1>
+    <div className="mx-auto max-w-md">
+      <Card>
+        <CardHeader>
+          <CardTitle>Login</CardTitle>
+          <CardDescription>
+            Sign in to search rooms and create bookings.
+          </CardDescription>
+        </CardHeader>
 
-      {successMessage && (
-        <p className="mb-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
-          {successMessage}
-        </p>
-      )}
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="mb-1 block text-sm font-medium">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            className="w-full rounded-md border px-3 py-2"
-            {...register("email", {
-              required: "Email is required",
-            })}
-          />
-          {errors.email && (
-            <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+        <CardContent>
+          {successMessage && (
+            <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+              {successMessage}
+            </div>
           )}
-        </div>
 
-        <div>
-          <label htmlFor="password" className="mb-1 block text-sm font-medium">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            className="w-full rounded-md border px-3 py-2"
-            {...register("password", {
-              required: "Password is required",
-              minLength: {
-                value: 6,
-                message: "Password must be at least 6 characters",
-              },
-            })}
-          />
-          {errors.password && (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.password.message}
-            </p>
+          {serverError && (
+            <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {serverError}
+            </div>
           )}
-        </div>
 
-        {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                {...register("email", {
+                  required: "Email is required",
+                })}
+              />
+              {errors.email && (
+                <p className="text-sm text-red-600">{errors.email.message}</p>
+              )}
+            </div>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full rounded-md bg-slate-900 px-4 py-2 text-white disabled:opacity-50"
-        >
-          {isSubmitting ? "Logging in..." : "Login"}
-        </button>
-      </form>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                {...register("password", {
+                  required: "Password is required",
+                  minLength: {
+                    value: 6,
+                    message: "Password must be at least 6 characters",
+                  },
+                })}
+              />
+              {errors.password && (
+                <p className="text-sm text-red-600">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
 
-      <p className="mt-4 text-sm text-slate-600">
-        Don&apos;t have an account?{" "}
-        <Link to="/register" className="font-medium text-slate-900 underline">
-          Register
-        </Link>
-      </p>
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Logging in..." : "Login"}
+            </Button>
+          </form>
+
+          <p className="mt-4 text-sm text-slate-600">
+            Don&apos;t have an account?{" "}
+            <Link to="/register" className="font-medium underline">
+              Register
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

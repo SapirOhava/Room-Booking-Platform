@@ -1,10 +1,21 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+
 import { searchRooms } from "../api/rooms";
 import { createBooking } from "../api/bookings";
 import type { CreateBookingData, Room, SearchRoomsParams } from "../types";
 import { getErrorMessage } from "../utils/getErrorMessage";
 import RoomCard from "../components/rooms/RoomCard";
+
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 
 type BookingFormValues = {
   checkIn: string;
@@ -86,161 +97,147 @@ function SearchRoomsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg bg-white p-6 shadow">
-        <h1 className="mb-6 text-2xl font-bold">Search Rooms</h1>
+      <Card>
+        <CardHeader>
+          <CardTitle>Search Rooms</CardTitle>
+        </CardHeader>
 
-        <form
-          onSubmit={handleSubmit(onSearch)}
-          className="grid gap-4 md:grid-cols-2"
-        >
-          <div>
-            <label htmlFor="city" className="mb-1 block text-sm font-medium">
-              City
-            </label>
-            <input
-              id="city"
-              type="text"
-              className="w-full rounded-md border px-3 py-2"
-              placeholder="e.g. Tel Aviv"
-              {...register("city")}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="guests" className="mb-1 block text-sm font-medium">
-              Guests
-            </label>
-            <input
-              id="guests"
-              type="number"
-              min="1"
-              className="w-full rounded-md border px-3 py-2"
-              placeholder="e.g. 2"
-              {...register("guests", {
-                valueAsNumber: true,
-                min: {
-                  value: 1,
-                  message: "Guests must be at least 1",
-                },
-              })}
-            />
-            {errors.guests && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.guests.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label
-              htmlFor="minPrice"
-              className="mb-1 block text-sm font-medium"
-            >
-              Min price
-            </label>
-            <input
-              id="minPrice"
-              type="number"
-              min="0"
-              className="w-full rounded-md border px-3 py-2"
-              placeholder="e.g. 200"
-              {...register("minPrice", {
-                valueAsNumber: true,
-                min: {
-                  value: 0,
-                  message: "Min price cannot be negative",
-                },
-              })}
-            />
-            {errors.minPrice && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.minPrice.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label
-              htmlFor="maxPrice"
-              className="mb-1 block text-sm font-medium"
-            >
-              Max price
-            </label>
-            <input
-              id="maxPrice"
-              type="number"
-              min="0"
-              className="w-full rounded-md border px-3 py-2"
-              placeholder="e.g. 800"
-              {...register("maxPrice", {
-                valueAsNumber: true,
-                min: {
-                  value: 0,
-                  message: "Max price cannot be negative",
-                },
-              })}
-            />
-            {errors.maxPrice && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.maxPrice.message}
-              </p>
-            )}
-          </div>
-
-          <div className="md:col-span-2">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="rounded-md bg-slate-900 px-4 py-2 text-white disabled:opacity-50"
-            >
-              {isSubmitting ? "Searching..." : "Search"}
-            </button>
-          </div>
-        </form>
-
-        {serverError && (
-          <p className="mt-4 text-sm text-red-600">{serverError}</p>
-        )}
-      </div>
-
-      <div className="rounded-lg bg-white p-6 shadow">
-        <h2 className="mb-4 text-xl font-semibold">Results</h2>
-
-        {!hasSearched && (
-          <p className="text-slate-600">
-            Search for rooms to see available results.
-          </p>
-        )}
-
-        {hasSearched && rooms.length === 0 && !serverError && (
-          <p className="text-slate-600">No rooms found.</p>
-        )}
-
-        {bookingMessage && (
-          <p className="mb-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
-            {bookingMessage}
-          </p>
-        )}
-
-        {bookingError && (
-          <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-            {bookingError}
-          </p>
-        )}
-
-        {rooms.length > 0 && (
-          <div className="space-y-4">
-            {rooms.map((room) => (
-              <RoomCard
-                key={room.id}
-                room={room}
-                isBooking={bookingLoadingRoomId === room.id}
-                onBook={handleBookRoom}
+        <CardContent>
+          <form
+            onSubmit={handleSubmit(onSearch)}
+            className="grid gap-4 md:grid-cols-2"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="city">City</Label>
+              <Input
+                id="city"
+                type="text"
+                placeholder="e.g. Tel Aviv"
+                {...register("city")}
               />
-            ))}
-          </div>
-        )}
-      </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="guests">Guests</Label>
+              <Input
+                id="guests"
+                type="number"
+                min="1"
+                placeholder="e.g. 2"
+                {...register("guests", {
+                  valueAsNumber: true,
+                  min: {
+                    value: 1,
+                    message: "Guests must be at least 1",
+                  },
+                })}
+              />
+              {errors.guests && (
+                <p className="text-sm text-red-600">{errors.guests.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="minPrice">Min price</Label>
+              <Input
+                id="minPrice"
+                type="number"
+                min="0"
+                placeholder="e.g. 200"
+                {...register("minPrice", {
+                  valueAsNumber: true,
+                  min: {
+                    value: 0,
+                    message: "Min price cannot be negative",
+                  },
+                })}
+              />
+              {errors.minPrice && (
+                <p className="text-sm text-red-600">
+                  {errors.minPrice.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="maxPrice">Max price</Label>
+              <Input
+                id="maxPrice"
+                type="number"
+                min="0"
+                placeholder="e.g. 800"
+                {...register("maxPrice", {
+                  valueAsNumber: true,
+                  min: {
+                    value: 0,
+                    message: "Max price cannot be negative",
+                  },
+                })}
+              />
+              {errors.maxPrice && (
+                <p className="text-sm text-red-600">
+                  {errors.maxPrice.message}
+                </p>
+              )}
+            </div>
+
+            <div className="md:col-span-2">
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Searching..." : "Search"}
+              </Button>
+            </div>
+          </form>
+
+          {serverError && (
+            <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {serverError}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Results</CardTitle>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          {!hasSearched && (
+            <p className="text-sm text-muted-foreground">
+              Search for rooms to see available results.
+            </p>
+          )}
+
+          {hasSearched && rooms.length === 0 && !serverError && (
+            <p className="text-sm text-muted-foreground">No rooms found.</p>
+          )}
+
+          {bookingMessage && (
+            <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+              {bookingMessage}
+            </div>
+          )}
+
+          {bookingError && (
+            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {bookingError}
+            </div>
+          )}
+
+          {rooms.length > 0 && (
+            <div className="space-y-4">
+              {rooms.map((room) => (
+                <RoomCard
+                  key={room.id}
+                  room={room}
+                  isBooking={bookingLoadingRoomId === room.id}
+                  onBook={handleBookRoom}
+                />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

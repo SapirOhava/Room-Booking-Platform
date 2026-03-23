@@ -1,6 +1,17 @@
 import { useState } from "react";
 import type { Room } from "../../types";
 
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
+
 type BookingFormValues = {
   checkIn: string;
   checkOut: string;
@@ -35,62 +46,67 @@ function RoomCard({ room, isBooking, onBook }: RoomCardProps) {
   }
 
   return (
-    <div className="rounded-md border p-4">
-      <h3 className="text-lg font-semibold">{room.name}</h3>
-      <p className="text-sm text-slate-600">{room.city}</p>
+    <Card>
+      <CardHeader>
+        <CardTitle>{room.name}</CardTitle>
+        <CardDescription>{room.city}</CardDescription>
+      </CardHeader>
 
-      <div className="mt-3 space-y-1 text-sm">
-        <p>
-          <span className="font-medium">Price per night:</span>{" "}
-          {Number(room.pricePerNight).toFixed(2)}
-        </p>
-        <p>
-          <span className="font-medium">Capacity:</span> {room.capacity}
-        </p>
-        {room.description && (
+      <CardContent className="space-y-4">
+        <div className="space-y-1 text-sm">
           <p>
-            <span className="font-medium">Description:</span> {room.description}
+            <span className="font-medium">Price per night:</span>{" "}
+            {Number(room.pricePerNight).toFixed(2)}
           </p>
+          <p>
+            <span className="font-medium">Capacity:</span> {room.capacity}
+          </p>
+          {room.description && (
+            <p>
+              <span className="font-medium">Description:</span>{" "}
+              {room.description}
+            </p>
+          )}
+        </div>
+
+        <form
+          onSubmit={handleSubmitBooking}
+          className="grid gap-4 md:grid-cols-3"
+        >
+          <div className="space-y-2">
+            <Label htmlFor={`checkIn-${room.id}`}>Check-in</Label>
+            <Input
+              id={`checkIn-${room.id}`}
+              type="date"
+              value={checkIn}
+              onChange={(e) => setCheckIn(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor={`checkOut-${room.id}`}>Check-out</Label>
+            <Input
+              id={`checkOut-${room.id}`}
+              type="date"
+              value={checkOut}
+              onChange={(e) => setCheckOut(e.target.value)}
+            />
+          </div>
+
+          <div className="flex items-end">
+            <Button type="submit" className="w-full" disabled={isBooking}>
+              {isBooking ? "Booking..." : "Book this room"}
+            </Button>
+          </div>
+        </form>
+
+        {localError && (
+          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {localError}
+          </div>
         )}
-      </div>
-
-      <form
-        onSubmit={handleSubmitBooking}
-        className="mt-4 grid gap-3 md:grid-cols-3"
-      >
-        <div>
-          <label className="mb-1 block text-sm font-medium">Check-in</label>
-          <input
-            type="date"
-            value={checkIn}
-            onChange={(e) => setCheckIn(e.target.value)}
-            className="w-full rounded-md border px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium">Check-out</label>
-          <input
-            type="date"
-            value={checkOut}
-            onChange={(e) => setCheckOut(e.target.value)}
-            className="w-full rounded-md border px-3 py-2"
-          />
-        </div>
-
-        <div className="flex items-end">
-          <button
-            type="submit"
-            disabled={isBooking}
-            className="w-full rounded-md bg-slate-900 px-4 py-2 text-white disabled:opacity-50"
-          >
-            {isBooking ? "Booking..." : "Book this room"}
-          </button>
-        </div>
-      </form>
-
-      {localError && <p className="mt-3 text-sm text-red-600">{localError}</p>}
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
