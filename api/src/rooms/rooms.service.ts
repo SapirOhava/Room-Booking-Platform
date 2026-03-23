@@ -28,10 +28,10 @@ export class RoomsService {
 
     const cacheKey = [
       'rooms:search',
-      city?.trim().toLowerCase() || 'all',
-      guests ?? 'all',
-      minPrice ?? 'all',
-      maxPrice ?? 'all',
+      `city=${city?.trim().toLowerCase() || 'all'}`,
+      `guests=${guests ?? 'all'}`,
+      `minPrice=${minPrice ?? 'all'}`,
+      `maxPrice=${maxPrice ?? 'all'}`,
     ].join(':');
 
     try {
