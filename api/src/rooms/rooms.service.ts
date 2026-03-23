@@ -1,6 +1,7 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
+import type { Room } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SearchRoomsQueryDto } from './dto/search-rooms-query.dto';
 
@@ -11,27 +12,33 @@ export class RoomsService {
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
-  async searchRooms(query: SearchRoomsQueryDto) {
+  async searchRooms(query: SearchRoomsQueryDto): Promise<Room[]> {
     const { city, guests, minPrice, maxPrice } = query;
+
+    // Defensive validation beyond class-validator (cross-field rule).
+    if (
+      minPrice !== undefined &&
+      maxPrice !== undefined &&
+      minPrice > maxPrice
+    ) {
+      throw new BadRequestException(
+        'minPrice must be less than or equal to maxPrice',
+      );
+    }
 
     const cacheKey = [
       'rooms:search',
-      city ?? 'all',
+      city?.trim().toLowerCase() || 'all',
       guests ?? 'all',
       minPrice ?? 'all',
       maxPrice ?? 'all',
     ].join(':');
 
     try {
-      const cachedRooms = await this.cacheManager.get<any[]>(cacheKey);
-
-      if (cachedRooms) {
-        console.log('cacheee redis worksssss');
-        console.log('cachedRooms: ', cachedRooms);
-        return cachedRooms;
-      }
+      const cachedRooms = await this.cacheManager.get<Room[]>(cacheKey);
+      if (cachedRooms) return cachedRooms;
     } catch {
-      // fail open: if Redis is down, still continue to DB
+      // fail-open: DB still works if cache is unavailable
     }
 
     const rooms = await this.prisma.room.findMany({
@@ -60,17 +67,15 @@ export class RoomsService {
             }
           : {}),
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
     });
 
-    console.log('using postgress not redisss');
-    console.log('rooms: ', rooms);
     try {
+      // NOTE: some cache stores interpret ttl differently.
+      // For Keyv-based Redis in your setup, keep as number and verify behavior.
       await this.cacheManager.set(cacheKey, rooms, 60_000);
     } catch {
-      // fail open: if cache write fails, still return DB result
+      // fail-open
     }
 
     return rooms;
