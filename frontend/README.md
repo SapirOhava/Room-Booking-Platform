@@ -10,14 +10,14 @@ This app is the **UI microservice** in the monorepo; the backend lives under `..
 
 Aligned with the brief, this frontend implements:
 
-| Feature | Status |
-|---------|--------|
-| User registration | Yes (`/register`) |
-| User login | Yes (`/login`) |
-| Room search | Yes (`/rooms`, protected) |
-| Create booking | Yes (from search results) |
-| Cancellation | Not implemented (out of scope for code) |
-| Booking history | Not implemented (out of scope for code) |
+| Feature           | Status                                  |
+| ----------------- | --------------------------------------- |
+| User registration | Yes (`/register`)                       |
+| User login        | Yes (`/login`)                          |
+| Room search       | Yes (`/rooms`, protected)               |
+| Create booking    | Yes (from search results)               |
+| Cancellation      | Not implemented (out of scope for code) |
+| Booking history   | Not implemented (out of scope for code) |
 
 ---
 
@@ -53,33 +53,40 @@ NestJS API (../api)  ←  PostgreSQL, Redis (cache), JWT
 ## Features
 
 ### 1. Registration (`/register`)
+
 - Collects full name, email, password (client-side validation with react-hook-form).
 - `POST /auth/register` via `registerUser`.
 - On success, navigates to `/login` with an optional success message in router state.
 
 ### 2. Login (`/login`)
+
 - Email + password.
 - `POST /auth/login` → stores `accessToken` with `setToken`, navigates to `/rooms`.
 
 ### 3. Room Search (`/rooms`) — protected
+
 - Filter by city, guests, min/max price.
 - `GET /rooms/search` with query params.
 - Results rendered as cards; supports creating a booking per room (check-in / check-out).
 
 ### 4. Bookings
+
 - `POST /bookings` with JWT; body includes `roomId`, `checkIn`, `checkOut` (ISO strings).
 - Success and error feedback via inline banners (not modals).
 
 ### 5. Navigation & Session
+
 - **Navbar:** links to Rooms, Login/Register or Logout.
 - **Logout:** clears token from `localStorage` and sends user to `/login`.
 
 ### 6. Error Handling (API)
+
 - Backend returns a **unified JSON error shape** (`statusCode`, `code`, `message`, optional `details`).
 - **`getErrorMessage`** (`src/utils/getErrorMessage.ts`) reads `error.response.data.message` from Axios errors and maps to a single string for banners.
 - **Field errors:** react-hook-form shows validation under inputs; **server errors** show in red alert boxes above forms or in the search/booking sections.
 
 ### 7. Not Found
+
 - Unknown routes render `NotFoundPage` (`*` route).
 
 ---
@@ -141,6 +148,7 @@ VITE_API_URL=http://localhost:3001
 ## How to Run Locally
 
 ### Prerequisites
+
 - Node.js (LTS recommended)
 - API running (see `../api/README.md`) — typically `http://localhost:3001`
 - PostgreSQL + Redis if required by the API
@@ -194,13 +202,13 @@ npm run lint
 
 ## API Integration Summary
 
-| UI action | HTTP method | Endpoint |
-|-----------|-------------|----------|
-| Register | POST | `/auth/register` |
-| Login | POST | `/auth/login` |
-| Search rooms | GET | `/rooms/search` |
-| Create booking | POST | `/bookings` |
-| (Optional) Current user | GET | `/auth/me` — available via `getMe()` if you extend the UI |
+| UI action               | HTTP method | Endpoint                                                  |
+| ----------------------- | ----------- | --------------------------------------------------------- |
+| Register                | POST        | `/auth/register`                                          |
+| Login                   | POST        | `/auth/login`                                             |
+| Search rooms            | GET         | `/rooms/search`                                           |
+| Create booking          | POST        | `/bookings`                                               |
+| (Optional) Current user | GET         | `/auth/me` — available via `getMe()` if you extend the UI |
 
 All authenticated calls rely on the Axios instance in `src/api/axios.ts` (Bearer token from `localStorage`).
 
