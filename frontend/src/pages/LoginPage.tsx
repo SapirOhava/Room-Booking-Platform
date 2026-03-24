@@ -41,7 +41,7 @@ function LoginPage() {
       setToken(response.accessToken);
 
       navigate("/rooms");
-    } catch (error: any) {
+    } catch (error: unknown) {
       setServerError(getErrorMessage(error));
     }
   }

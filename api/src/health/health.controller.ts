@@ -17,9 +17,9 @@ export class HealthController {
       };
     } catch {
       throw new ServiceUnavailableException({
-        status: 'error',
-        database: 'down',
-        timestamp: new Date().toISOString(),
+        code: 'DEPENDENCY_UNAVAILABLE',
+        message: 'Database is down',
+        details: [{ field: 'database', message: 'Database is down' }],
       });
     }
   }

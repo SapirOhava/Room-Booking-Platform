@@ -70,15 +70,22 @@ export class BookingsService {
           totalPrice,
         },
       });
-    } catch (error: any) {
-      const message = String(error?.message ?? '');
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : String(error ?? '');
 
       if (message.includes('booking_no_overlap')) {
-        throw new BadRequestException('Room is not available for these dates');
+        throw new BadRequestException({
+          code: 'ROOM_NOT_AVAILABLE',
+          message: 'Room is not available for these dates',
+        });
       }
 
       if (message.includes('booking_check_dates')) {
-        throw new BadRequestException('checkOut must be after checkIn');
+        throw new BadRequestException({
+          code: 'INVALID_DATE_RANGE',
+          message: 'checkOut must be after checkIn',
+        });
       }
 
       throw error;

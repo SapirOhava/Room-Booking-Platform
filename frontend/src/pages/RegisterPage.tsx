@@ -38,7 +38,7 @@ function RegisterPage() {
           successMessage: "Registration successful. You can now log in.",
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setServerError(getErrorMessage(error));
     }
   }

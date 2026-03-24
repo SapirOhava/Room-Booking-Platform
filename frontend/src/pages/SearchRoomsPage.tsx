@@ -67,7 +67,7 @@ function SearchRoomsPage() {
 
       const result = await searchRooms(cleanParams);
       setRooms(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setServerError(getErrorMessage(error));
       setRooms([]);
     }
@@ -88,7 +88,7 @@ function SearchRoomsPage() {
       await createBooking(bookingData);
 
       setBookingMessage("Booking created successfully.");
-    } catch (error: any) {
+    } catch (error: unknown) {
       setBookingError(getErrorMessage(error));
     } finally {
       setBookingLoadingRoomId(null);
