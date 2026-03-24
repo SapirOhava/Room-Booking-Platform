@@ -1,15 +1,15 @@
 # Room Booking API
 
-A backend API for a room booking assignment built with NestJS, TypeScript, Prisma, PostgreSQL, JWT authentication, Argon2 password hashing, and Nest throttling.
+A backend API for a **Room Booking Platform** assignment, built with **NestJS**, **TypeScript**, **Prisma**, **PostgreSQL**, **JWT authentication**, **Argon2** password hashing, **rate limiting**, **Redis-backed caching** for room search, **Swagger/OpenAPI** documentation, a **unified error response format**, and **unit tests** for core business logic.
 
-This project focuses on the core requirements of a booking system:
+The assignment implementation scope covers:
 - user registration
 - user login
-- authenticated booking creation
 - room search with filters
-- double-booking prevention
-- rate limiting
-- clear modular backend structure
+- authenticated booking creation  
+*(cancellation and booking history were out of scope for the implementation, per brief.)*
+
+The overall system is split into **two services**: a **React (Vite) frontend** and this **NestJS API** (see repository root).
 
 ---
 
@@ -19,60 +19,74 @@ This project focuses on the core requirements of a booking system:
 - **TypeScript**
 - **Prisma ORM**
 - **PostgreSQL**
-- **JWT authentication** using `@nestjs/jwt`, `@nestjs/passport`, `passport-jwt`
-- **Argon2** for password hashing
-- **class-validator** and **class-transformer** for DTO validation
-- **@nestjs/throttler** for rate limiting
+- **JWT authentication** — `@nestjs/jwt`, `@nestjs/passport`, `passport-jwt`
+- **Argon2** — password hashing
+- **class-validator** & **class-transformer** — DTO validation and transformation
+- **@nestjs/throttler** — rate limiting (global guard + per-route `@Throttle`)
+- **Redis** — room search result caching via `@nestjs/cache-manager`, `cache-manager`, **Keyv** + **`@keyv/redis`**
+- **Swagger / OpenAPI** — `@nestjs/swagger`, `swagger-ui-express` (interactive docs at `/docs`)
+- **Global exception filter** — consistent JSON error shape for all HTTP errors
+- **Jest** — unit tests for `AuthService`, `BookingsService`, `RoomsService`
+
+---
+
+## High-Level Architecture (assignment context)
+
+| Layer | Role |
+|--------|------|
+| **Client** | React SPA (separate app under repo `frontend/`), calls API over HTTP |
+| **API (this service)** | Auth, validation, business rules, throttling, caching orchestration |
+| **PostgreSQL** | Source of truth for users, rooms, bookings; indexes on search/booking fields; DB constraints for booking integrity |
+| **Redis** | Cache for expensive/read-heavy **room search** queries; optional `REDIS_URL`; fail-open if Redis is down |
+| **Load balancer** | In production, sits in front of multiple API instances; not required for local dev |
+
+**Multi-region / fault tolerance (design note):** In production you would replicate Postgres (read replicas), use Redis Cluster or regional caches, and route traffic via DNS + load balancers; the API is stateless except for JWT validation and DB/Redis, so horizontal scaling is feasible.
 
 ---
 
 ## Core Features Implemented
 
 ### 1. User Registration
-Users can register with:
-- email
-- full name
-- password
-
-Passwords are hashed with **Argon2** before being stored in the database.
+- Email, full name, password  
+- Passwords hashed with **Argon2** before persistence  
+- Duplicate email rejected with a clear error
 
 ### 2. User Login
-Users can log in with:
-- email
-- password
-
-If credentials are valid, the API returns:
-- a JWT access token
-- basic user data
+- Email + password  
+- Returns **JWT access token** and safe user fields
 
 ### 3. JWT Authentication
-Protected routes require a bearer token:
+Protected routes require:
 
 ```http
 Authorization: Bearer <access_token>
 ```
 
-The token is issued after successful login and is later used to identify the authenticated user.
+The booking flow uses **`req.user.id` from the JWT**, not a client-supplied `userId` in the body.
 
 ### 4. Room Search
-Rooms can be searched by:
-- city
-- guest count
-- minimum price
-- maximum price
+Filter by optional query params:
+- `city`
+- `guests`
+- `minPrice`
+- `maxPrice`
 
-### 5. Authenticated Booking Creation
-Only authenticated users can create bookings.
+Cross-field rule: if both prices are set, `minPrice` must not exceed `maxPrice`.
 
-The booking endpoint does **not** trust `userId` sent from the client body. Instead, it takes the authenticated user from the JWT token.
+### 5. Redis Caching (Room Search)
+- Search results are cached under a deterministic key derived from the query (city, guests, min/max price).
+- **TTL:** ~60 seconds (`60000` ms) in the current implementation.
+- **Fail-open:** if Redis read/write fails, the service still queries PostgreSQL and returns results.
 
-### 6. Double-Booking Prevention
-This project uses a **layered approach** to prevent double booking:
+Configure Redis via `REDIS_URL` (defaults to `redis://localhost:6379` if unset).
 
-#### Application-layer overlap check
-Before creating a booking, the API checks whether there is already a confirmed booking for the same room that overlaps the requested date range.
+### 6. Authenticated Booking Creation
+- `POST /bookings` requires a valid JWT.  
+- User identity comes from the token.
 
-Overlap rule:
+### 7. Double-Booking Prevention (Layered)
+
+**Application layer:** overlap check for `CONFIRMED` bookings on the same room:
 
 ```text
 existing.checkIn < requested.checkOut
@@ -80,55 +94,58 @@ AND
 existing.checkOut > requested.checkIn
 ```
 
-This logic is intentionally based on **strict** comparisons:
-- `<` instead of `<=`
-- `>` instead of `>=`
+Strict `<` / `>` allows **back-to-back** bookings (checkout equals next check-in).
 
-That allows **back-to-back bookings**.
+**Database layer:** PostgreSQL migration adds `btree_gist`, a `CHECK` on date order, and an **exclusion constraint** on `(roomId, tsrange)` for confirmed bookings so concurrent requests cannot both insert conflicting rows.
 
-Example:
-- existing booking: Mar 10 → Mar 12
-- new booking: Mar 12 → Mar 15
+**Service layer:** Prisma errors mentioning constraint names are mapped to friendly messages (`ROOM_NOT_AVAILABLE`, `INVALID_DATE_RANGE`).
 
-This is allowed because the first booking ends exactly when the next begins.
+### 8. Rate Limiting
+Global **ThrottlerGuard** with named limits (`short`, `medium`, `long`). Auth routes use stricter `@Throttle` overrides to reduce brute-force and spam.
 
-#### Database-level protection with PostgreSQL exclusion constraint
-To make the solution safer under concurrent requests, the database also enforces the booking invariant using a PostgreSQL migration with:
-- `btree_gist`
-- a `CHECK` constraint for valid date order
-- an **exclusion constraint** on `roomId` and booking range
+Exceeded limits → **HTTP 429** (also normalized by the global error filter when applicable).
 
-Conceptually, PostgreSQL enforces:
-- same `roomId`
-- confirmed bookings only
-- ranges `[checkIn, checkOut)` must not overlap
+### 9. Health Check
+- **`GET /health`** — verifies DB connectivity (`SELECT 1`). Returns `503` with structured error if the database is unavailable.
 
-This means:
-- include `checkIn`
-- exclude `checkOut`
+### 10. CORS
+Configured for the frontend origin (`http://localhost:5173` in `main.ts`) with `credentials: true` for cookie-based flows if needed.
 
-That is the correct booking model because one booking may end exactly when another begins.
+### 11. Swagger (OpenAPI)
+- **`GET /docs`** — Swagger UI (Bearer auth scheme `access-token` for protected routes).
+- DTOs use `@ApiProperty` / `@ApiPropertyOptional` where applicable; controllers use `@ApiTags`, `@ApiOperation`, etc.
 
-This DB-level rule is important because application code alone is not enough under concurrency. Two requests can race and both pass an app-level overlap check before either insert is committed. The exclusion constraint makes PostgreSQL the final source of truth.
+### 12. Unified Error Responses
+All errors pass through **`HttpExceptionFilter`** and return a consistent JSON body:
 
-### 7. Rate Limiting
-The API uses **Nest throttler** (`@nestjs/throttler`) to protect routes from abuse and burst traffic.
+```json
+{
+  "statusCode": 400,
+  "code": "VALIDATION_ERROR",
+  "message": "Validation failed",
+  "details": [{ "field": "password", "message": "Password must be at least 6 characters" }],
+  "path": "/auth/register",
+  "timestamp": "2026-03-24T12:34:56.789Z"
+}
+```
 
-Rate limiting is configured globally through:
-- `ThrottlerModule.forRoot(...)`
-- `APP_GUARD`
-- `ThrottlerGuard`
+Validation errors from `ValidationPipe` are normalized into this shape (including `details` when present).
 
-It is then tuned per route using `@Throttle(...)`.
+---
 
-This project uses stricter rate limits for sensitive auth routes such as:
-- `POST /auth/register`
-- `POST /auth/login`
+## Scalability & Caching (assignment)
 
-This helps protect against:
-- brute-force attempts
-- repeated registration spam
-- accidental frontend request bursts
+- **Search:** Redis reduces repeated identical queries to PostgreSQL; indexes on `Room` (`city`, `capacity`, composite) support filter queries.
+- **Booking:** Writes go to Postgres; exclusion constraint prevents races; throttling limits abuse.
+- **API:** Stateless; can scale horizontally behind a load balancer; session state is not stored server-side (JWT).
+
+---
+
+## Optional / Operational (assignment)
+
+- **Monitoring:** health endpoint suitable for load-balancer or k8s probes; Swagger documents contracts.
+- **Logging:** structured request logging can be added (middleware + correlation IDs); not required for core features.
+- **Notifications / analytics:** out of scope for this codebase; would integrate via async jobs or external services.
 
 ---
 
@@ -140,6 +157,7 @@ src/
     dto/
     auth.controller.ts
     auth.service.ts
+    auth.service.spec.ts
     auth.module.ts
     jwt.strategy.ts
     jwt-auth.guard.ts
@@ -149,114 +167,94 @@ src/
     dto/
     bookings.controller.ts
     bookings.service.ts
+    bookings.service.spec.ts
     bookings.module.ts
+
+  common/
+    errors/
+      api-error.type.ts
+      http-exception.filter.ts
+
+  health/
+    health.controller.ts
+    health.module.ts
 
   prisma/
     prisma.module.ts
     prisma.service.ts
+    seed.ts
 
   rooms/
     dto/
     rooms.controller.ts
     rooms.service.ts
+    rooms.service.spec.ts
     rooms.module.ts
 
   main.ts
   app.module.ts
+  app.controller.ts
+  app.controller.spec.ts
 
 prisma/
   schema.prisma
-  seed.ts
   migrations/
+
+test/
+  app.e2e-spec.ts
+  jest-e2e.json
 ```
 
 ---
 
-## Data Model
+## Data Model & Indexing
 
 ### User
-Fields:
-- `id`
-- `email`
-- `passwordHash`
-- `fullName`
-- `createdAt`
+- `id`, `email` (unique), `passwordHash`, `fullName`, `createdAt`
 
 ### Room
-Fields:
-- `id`
-- `name`
-- `city`
-- `capacity`
-- `pricePerNight`
-- `description`
-- `createdAt`
+- `id`, `name`, `city`, `capacity`, `pricePerNight`, `description`, `createdAt`  
+- **Indexes:** `city`, `capacity`, composite `(city, capacity)` for search filters
 
 ### Booking
-Fields:
-- `id`
-- `userId`
-- `roomId`
-- `checkIn`
-- `checkOut`
-- `totalPrice`
-- `status`
-- `createdAt`
+- `id`, `userId`, `roomId`, `checkIn`, `checkOut`, `totalPrice`, `status` (`CONFIRMED` | `CANCELLED`), `createdAt`  
+- **Indexes:** `roomId`, `userId`, composite `(roomId, checkIn, checkOut)` for overlap-related queries  
+- **Relations:** cascade delete from user/room
 
 ---
 
-## Authentication Flow
+## Authentication Flows
 
-### Register Flow
-Server logic:
-1. validate DTO input
-2. check whether the email already exists
-3. hash the password with Argon2
-4. save the user in PostgreSQL
-5. return safe user data only
+### Register
+1. Validate DTO  
+2. Reject duplicate email  
+3. Hash password (Argon2)  
+4. Persist user  
+5. Return safe fields only (no password hash)
 
-### Login Flow
-Server logic:
-1. find the user by email
-2. verify password against stored Argon2 hash
-3. build JWT payload
-4. sign JWT using the server secret
-5. return access token and basic user info
+### Login
+1. Find user by email  
+2. Verify password  
+3. Sign JWT (`sub`, `email`)  
+4. Return `accessToken` + user profile
 
-### Protected Route Flow
-When a client calls a protected route:
-1. the client sends `Authorization: Bearer <token>`
-2. `JwtAuthGuard` intercepts the request
-3. `jwt.strategy.ts` extracts the token from the header
-4. the token signature and expiration are verified
-5. the JWT payload is read
-6. the user is loaded from the database
-7. the authenticated user is attached to `req.user`
-8. the route handler continues
+### Protected Routes
+`JwtAuthGuard` → `JwtStrategy` validates token → loads user → `req.user` for handlers.
 
 ---
 
-## Booking Creation Flow
+## Booking Creation Flow (summary)
 
-When a booking request is made:
-1. validate that `checkOut > checkIn`
-2. verify the authenticated user exists
-3. verify the room exists
-4. check for overlapping confirmed bookings in application logic
-5. calculate the number of nights
-6. calculate total price
-7. attempt booking creation
-8. rely on PostgreSQL exclusion constraint as final protection under concurrency
-
-This layered design gives:
-- clear business validation in the API
-- strong data integrity in the database
+1. `checkOut > checkIn`  
+2. User and room exist  
+3. App-level overlap check  
+4. Compute nights and `totalPrice`  
+5. `prisma.booking.create`  
+6. DB constraint as final guard for concurrency
 
 ---
 
 ## PostgreSQL Constraint Strategy
-
-The migration adds:
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS btree_gist;
@@ -274,24 +272,40 @@ EXCLUDE USING gist (
 WHERE ("status" = 'CONFIRMED');
 ```
 
-### What this enforces
-- `checkOut` must be after `checkIn`
-- confirmed bookings for the same room may not overlap
-- back-to-back bookings are allowed because the range is `[checkIn, checkOut)`
-
-### Why this is important
-This is stronger than application code alone. Even if two booking requests arrive at almost the same time, PostgreSQL rejects the invalid conflicting insert.
-
 ---
 
 ## API Endpoints
 
 ### Auth
 
-#### `POST /auth/register`
-Create a new user.
+| Method | Path | Auth | Description |
+|--------|------|------|----------------|
+| POST | `/auth/register` | No | Register |
+| POST | `/auth/login` | No | Login + JWT |
+| GET | `/auth/me` | Bearer | Current user |
 
-Example request:
+### Rooms
+
+| Method | Path | Auth | Description |
+|--------|------|------|----------------|
+| GET | `/rooms/search` | No | Search with query params |
+
+### Bookings
+
+| Method | Path | Auth | Description |
+|--------|------|------|----------------|
+| POST | `/bookings` | Bearer | Create booking |
+
+### Health & Docs
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | DB connectivity check |
+| GET | `/docs` | Swagger UI |
+
+### Example requests
+
+**Register**
 
 ```json
 {
@@ -301,19 +315,7 @@ Example request:
 }
 ```
 
-#### `POST /auth/login`
-Authenticate user and return JWT access token.
-
-Example request:
-
-```json
-{
-  "email": "sapir@example.com",
-  "password": "123456"
-}
-```
-
-Example response:
+**Login response**
 
 ```json
 {
@@ -327,44 +329,13 @@ Example response:
 }
 ```
 
-#### `GET /auth/me`
-Returns the currently authenticated user.
-
-Headers:
-
-```http
-Authorization: Bearer <access_token>
-```
-
-### Rooms
-
-#### `GET /rooms/search`
-Search rooms with optional filters.
-
-Supported query params:
-- `city`
-- `guests`
-- `minPrice`
-- `maxPrice`
-
-Example:
+**Search**
 
 ```http
 GET /rooms/search?city=Tel%20Aviv&guests=2&minPrice=300&maxPrice=600
 ```
 
-### Bookings
-
-#### `POST /bookings`
-Create a booking for the authenticated user.
-
-Headers:
-
-```http
-Authorization: Bearer <access_token>
-```
-
-Example request:
+**Create booking**
 
 ```json
 {
@@ -376,31 +347,33 @@ Example request:
 
 ---
 
-## Rate Limiting Design
+## Rate Limiting
 
-The API uses **Nest throttler** as a global guard.
+- Global throttler with named windows  
+- Stricter limits on `POST /auth/register` and `POST /auth/login`  
+- Typical overload response: **429 Too Many Requests** (normalized by the global filter when applicable)
 
-### Why auth routes are stricter
-Login and registration are the most abuse-prone routes.
+---
 
-Examples of attacks/problems:
-- password brute-force attempts
-- bot traffic
-- repeated registration spam
-- accidental multi-clicks from the frontend
+## Testing
 
-### Why search is usually more relaxed
-Search routes are expected to be called more often by the UI, especially when users change filters.
+### Unit tests (Jest)
 
-### Why bookings are protected but not too aggressively limited
-Booking is a high-value authenticated action. It should be protected, but normal users should still be able to use the app comfortably.
+Service-level tests with mocked Prisma / cache / Argon2:
 
-### Expected throttling error
-If a rate limit is exceeded, Nest throttler returns:
-- **HTTP 429 Too Many Requests**
+- `src/auth/auth.service.spec.ts` — duplicate registration, login failure, login success  
+- `src/bookings/bookings.service.spec.ts` — invalid dates, overlap, success path  
+- `src/rooms/rooms.service.spec.ts` — price range validation, cache hit/miss  
 
-The frontend should handle that and show a friendly message such as:
-- `Too many requests. Please wait a moment and try again.`
+Run:
+
+```bash
+npm test -- --runInBand
+```
+
+### E2E (optional)
+
+Template e2e exists under `test/` (`npm run test:e2e`). The primary focus is the unit suite above.
 
 ---
 
@@ -409,184 +382,119 @@ The frontend should handle that and show a friendly message such as:
 ### 1. Install dependencies
 
 ```bash
+cd api
 npm install
 ```
 
-### 2. Configure environment variables
-Create a `.env` file:
+### 2. Infrastructure (PostgreSQL + Redis)
+
+From the **repository root** (optional):
+
+```bash
+docker compose up -d
+```
+
+This starts Postgres (`5432`) and Redis (`6379`) as in `compose.yaml`.
+
+### 3. Environment variables
+
+Create `api/.env`:
 
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/room_booking"
 JWT_SECRET="super-secret-key-change-this"
+REDIS_URL="redis://localhost:6379"
+PORT=3001
 ```
 
-### 3. Run migrations
-
-```bash
-npx prisma migrate dev --name init
-```
-
-If you are adding a custom SQL migration for overlap enforcement:
-
-```bash
-npx prisma migrate dev --name booking_no_overlap --create-only
-```
-
-Edit the generated `migration.sql`, then run:
+### 4. Migrations
 
 ```bash
 npx prisma migrate dev
 ```
 
-### 4. Seed the database
+For a custom SQL migration (e.g. exclusion constraint):
 
 ```bash
-npx ts-node prisma/seed.ts
+npx prisma migrate dev --name booking_no_overlap --create-only
 ```
 
-### 5. Start the server
+Edit the generated `migration.sql`, then:
+
+```bash
+npx prisma migrate dev
+```
+
+### 5. Seed
+
+```bash
+npx ts-node src/prisma/seed.ts
+```
+
+### 6. Start API
 
 ```bash
 npm run start:dev
 ```
 
-The API will be available at:
-
-```text
-http://localhost:3001
-```
+- **API:** `http://localhost:3001`  
+- **Swagger:** `http://localhost:3001/docs`
 
 ---
 
-## Example Testing Flow
+## Manual Testing Flow (API)
 
-### 1. Register
-Call `POST /auth/register`
-
-### 2. Login
-Call `POST /auth/login`
-
-Copy the returned `accessToken`.
-
-### 3. Search rooms
-Call `GET /rooms/search`
-
-Copy one `roomId`.
-
-### 4. Create booking
-Call `POST /bookings` with:
-- Bearer token
-- `roomId`
-- `checkIn`
-- `checkOut`
-
-### 5. Test overlap prevention
-Try creating another booking for the same room with overlapping dates.
-
-Expected result:
-- request should fail
-
-### 6. Test back-to-back booking
-Try creating another booking starting exactly when the first one ends.
-
-Expected result:
-- request should succeed
-
-### 7. Test rate limiting
-Send repeated rapid requests to `POST /auth/login` or `POST /auth/register`.
-
-Expected result:
-- eventually receive `429 Too Many Requests`
+1. `POST /auth/register`  
+2. `POST /auth/login` → copy `accessToken`  
+3. `GET /rooms/search` → copy a `roomId`  
+4. `POST /bookings` with `Authorization: Bearer <token>`  
+5. Retry overlapping dates → expect conflict  
+6. Back-to-back dates → expect success  
+7. Rapid auth calls → expect `429` eventually  
+8. `GET /health` → `status: ok` when DB is up  
 
 ---
 
 ## Error Handling
 
-Examples of handled errors:
-- invalid dates
-- user not found
-- room not found
-- overlapping booking
-- invalid credentials
-- unauthorized request
-- too many requests
+Handled cases include: validation failures, invalid credentials, unauthorized access, not found, room unavailable / overlap, bad date ranges, rate limits, and dependency failures (e.g. health check when DB is down).
 
-For rate limiting, the standard throttling response is:
-- `429 Too Many Requests`
-
-For booking conflicts, the API can return a clear business error such as:
-- `Room is not available for these dates`
+Responses follow the **unified JSON shape** described in section 12 above so clients can rely on `message`, optional `details`, and `code`.
 
 ---
 
 ## Security Decisions
 
-### Password Storage
-Passwords are hashed with Argon2 before storage.
-
-### JWT Authentication
-Protected routes use bearer tokens instead of sending email and password on every request.
-
-### Protected Booking Identity
-The booking route uses the authenticated user from the JWT token rather than trusting a client-provided `userId`.
-
-### Rate Limiting
-Sensitive routes are protected against request abuse and burst traffic using Nest throttler.
-
-### Database Integrity
-Critical booking consistency is enforced not only in application logic, but also in PostgreSQL using a constraint.
+- **Passwords:** Argon2 hashing  
+- **Auth:** JWT bearer tokens for protected routes  
+- **Bookings:** `userId` from JWT, not from request body  
+- **Rate limiting:** Throttler on sensitive and high-traffic routes  
+- **Data integrity:** PostgreSQL constraints + application checks  
+- **CORS:** Restricted to frontend origin in development  
 
 ---
 
-## Why this is a strong assignment solution
+## Why This Meets the Assignment Brief
 
-This project shows:
-- clear modular NestJS architecture
-- DTO validation
-- secure password hashing
-- JWT-based authentication
-- protected routes
-- filtered search
-- authenticated booking flow
-- layered double-booking prevention
-- database-level integrity enforcement
-- rate limiting with Nest throttler
-
-This is stronger than a basic CRUD implementation because it addresses real system-design concerns:
-- authentication
-- abuse protection
-- concurrency safety
-- data consistency
+- **API design:** Documented endpoints, request/response examples, JWT auth, rate limiting strategy, Swagger for interactive exploration  
+- **Database schema:** Users, rooms, bookings, relationships, indexes, consistency constraints  
+- **Concurrency:** App overlap check + PostgreSQL exclusion constraint  
+- **Scalability:** Redis cache for search, indexed queries, stateless API  
+- **Quality:** Standardized errors, health check, unit tests for core logic  
 
 ---
 
 ## Future Improvements
 
-Possible next improvements:
-- idempotency keys for retry safety
-- Swagger / OpenAPI documentation
-- automated unit and integration tests
-- health check endpoint
-- structured logging and observability
-- refresh tokens
-- booking history endpoint
-- cancellation flow
-- deployment architecture for multi-region discussion
+- Booking **cancellation** and **history** endpoints (explicitly out of scope for this implementation)  
+- **Refresh tokens** / rotation  
+- **Idempotency** keys for booking retries  
+- **Structured logging** with request IDs  
+- **Integration/e2e** tests against real Postgres + Redis  
+- **Multi-region** deployment and DR runbooks  
 
 ---
 
 ## Summary
 
-This project implements the core backend requirements of a room booking system with a practical and production-aware design.
-
-It includes:
-- registration
-- login
-- JWT authentication
-- room search with filters
-- authenticated booking creation
-- application-level overlap checks
-- PostgreSQL exclusion constraint for stronger booking integrity
-- Nest throttler rate limiting
-
-The result is a modular backend that is both functional and designed to address important real-world concerns such as security, abuse prevention, and consistency under concurrent requests.
+This API delivers registration, login, JWT-protected booking, room search with **Redis-backed caching** and **fail-open** behavior, **PostgreSQL-backed integrity** for concurrent bookings, **rate limiting**, **Swagger** documentation, **unified error responses**, and **unit tests** on critical services—aligned with a practical room-booking platform design and the assignment’s system-design themes (security, scalability, consistency, and operability).
