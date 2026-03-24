@@ -1,9 +1,7 @@
-<!--
-Navigation:
-- API implementation README: ./API_IMPLEMENTATION_README.md
-- Frontend implementation README: ./FRONTEND_IMPLEMENTATION_README.md
-- This assignment design document: ./ASSIGNMENT_SYSTEM_DESIGN.md
--->
+> Navigation:
+>
+> - [Backend implementation README](./api/README.md)
+> - [Frontend implementation README](./frontend/README.md)
 
 # Room Booking Platform — Assignment System Design
 
