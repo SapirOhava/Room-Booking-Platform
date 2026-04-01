@@ -47,8 +47,10 @@ docker compose up -d
 
 This starts:
 
-- PostgreSQL on `localhost:5432` (database `room_booking`, user/password `postgres`)
-- Redis on `localhost:6379`
+- **PostgreSQL** on `localhost:5432` (database `room_booking`, user/password `postgres`)
+- **Redis** on `localhost:6379`
+
+**Why Redis?** The API caches **room search** results in Redis (see [`api/README.md`](./api/README.md)). The frontend does not connect to Redis—only the backend does, via `REDIS_URL` in `api/.env`. If Redis is unavailable, the API can still serve searches from PostgreSQL (fail-open caching).
 
 ### 2. API (terminal 1)
 
@@ -126,5 +128,5 @@ docker compose down -v
 ## Summary
 
 - **Frontend** talks to the API using `VITE_API_URL` and stores the JWT in `localStorage`.
-- **API** documents itself at `/docs` and uses Redis for search caching (see API README).
+- **API** uses **PostgreSQL** for data and **Redis** for room-search cache; documents itself at `/docs` (details in [API README](./api/README.md)).
 - **System design** for reviewers is in **`ASSIGNMENT_SYSTEM_DESIGN.md`**; runbooks and feature detail stay in **`api/README.md`** and **`frontend/README.md`** so this file stays short.
