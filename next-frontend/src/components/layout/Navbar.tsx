@@ -11,7 +11,7 @@ export function Navbar() {
 
         <nav className="flex items-center gap-2">
           <Link
-            href="/signin"
+            href="/login"
             className="text-sm font-medium text-muted-foreground hover:text-foreground"
           >
             Sign in

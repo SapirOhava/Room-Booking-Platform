@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 
-// import { registerUser } from "@/lib/api/auth";
-// import { getErrorMessage } from "@/lib/utils/getErrorMessage";
+import { loginUser } from "@/app/api/auth";
+import { getErrorMessage } from "@/app/utils/getErrorMessage";
+import { setToken } from "@/app/utils/token";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,40 +20,39 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-type RegisterFormData = {
-  fullName: string;
+type LoginFormData = {
   email: string;
   password: string;
 };
 
-export default function RegisterPage() {
+export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [serverError, setServerError] = useState("");
+
+  const successMessage = searchParams.get("successMessage");
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterFormData>({
+  } = useForm<LoginFormData>({
     defaultValues: {
-      fullName: "",
       email: "",
       password: "",
     },
   });
 
-  async function onSubmit(data: RegisterFormData) {
+  async function onSubmit(data: LoginFormData) {
     try {
       setServerError("");
 
-      // await registerUser(data);
+      const response = await loginUser(data);
+      setToken(response.accessToken);
 
-      router.push(
-        "/login?successMessage=" +
-          encodeURIComponent("Registration successful. You can now log in."),
-      );
+      router.push("/");
     } catch (error: unknown) {
-      // setServerError(getErrorMessage(error));
+      setServerError(getErrorMessage(error));
     }
   }
 
@@ -60,11 +60,17 @@ export default function RegisterPage() {
     <div className="flex-1 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Register</CardTitle>
-          <CardDescription>Create an account.</CardDescription>
+          <CardTitle>Login</CardTitle>
+          <CardDescription>Log in to your account.</CardDescription>
         </CardHeader>
 
         <CardContent>
+          {successMessage ? (
+            <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+              {successMessage}
+            </div>
+          ) : null}
+
           {serverError ? (
             <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
               {serverError}
@@ -76,23 +82,6 @@ export default function RegisterPage() {
             className="space-y-4"
             noValidate
           >
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full name</Label>
-              <Input
-                id="fullName"
-                type="text"
-                placeholder="Your full name"
-                {...register("fullName", {
-                  required: "Full name is required",
-                })}
-              />
-              {errors.fullName ? (
-                <p className="text-sm text-red-600">
-                  {errors.fullName.message}
-                </p>
-              ) : null}
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -118,14 +107,10 @@ export default function RegisterPage() {
               <Input
                 id="password"
                 type="password"
-                placeholder="Create a password"
-                autoComplete="new-password"
+                placeholder="Enter your password"
+                autoComplete="current-password"
                 {...register("password", {
                   required: "Password is required",
-                  minLength: {
-                    value: 6,
-                    message: "Password must be at least 6 characters",
-                  },
                 })}
               />
               {errors.password ? (
@@ -136,17 +121,17 @@ export default function RegisterPage() {
             </div>
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Creating account..." : "Register"}
+              {isSubmitting ? "Logging in..." : "Login"}
             </Button>
           </form>
 
           <p className="mt-4 text-sm text-muted-foreground">
-            Already have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link
-              href="/login"
+              href="/register"
               className="font-medium underline underline-offset-4"
             >
-              Login
+              Register
             </Link>
           </p>
         </CardContent>
