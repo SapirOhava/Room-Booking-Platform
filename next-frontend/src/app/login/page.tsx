@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { loginUser } from "@/app/api/auth";
 import { getErrorMessage } from "@/app/utils/getErrorMessage";
 import { setToken } from "@/app/utils/token";
+import { LoginFormData } from "@/app/types";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,11 +20,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-type LoginFormData = {
-  email: string;
-  password: string;
-};
 
 export default function LoginPage() {
   const router = useRouter();

@@ -1,16 +1,18 @@
-import { useState } from "react";
-import type { Room } from "../../types";
+"use client";
 
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
+import { useState, type SubmitEventHandler } from "react";
+import type { Room } from "@/app/types";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../ui/card";
+} from "@/components/ui/card";
 
 type BookingFormValues = {
   checkIn: string;
@@ -23,12 +25,14 @@ type RoomCardProps = {
   onBook: (roomId: string, values: BookingFormValues) => Promise<void>;
 };
 
-function RoomCard({ room, isBooking, onBook }: RoomCardProps) {
+export default function RoomCard({ room, isBooking, onBook }: RoomCardProps) {
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [localError, setLocalError] = useState("");
 
-  async function handleSubmitBooking(e: React.FormEvent<HTMLFormElement>) {
+  const handleSubmitBooking: SubmitEventHandler<HTMLFormElement> = async (
+    e,
+  ) => {
     e.preventDefault();
     setLocalError("");
 
@@ -42,8 +46,12 @@ function RoomCard({ room, isBooking, onBook }: RoomCardProps) {
       return;
     }
 
-    await onBook(room.id, { checkIn, checkOut });
-  }
+    try {
+      await onBook(room.id, { checkIn, checkOut });
+    } catch {
+      setLocalError("Failed to create booking. Please try again.");
+    }
+  };
 
   return (
     <Card>
@@ -61,12 +69,13 @@ function RoomCard({ room, isBooking, onBook }: RoomCardProps) {
           <p>
             <span className="font-medium">Capacity:</span> {room.capacity}
           </p>
-          {room.description && (
+
+          {room.description ? (
             <p>
               <span className="font-medium">Description:</span>{" "}
               {room.description}
             </p>
-          )}
+          ) : null}
         </div>
 
         <form
@@ -100,14 +109,12 @@ function RoomCard({ room, isBooking, onBook }: RoomCardProps) {
           </div>
         </form>
 
-        {localError && (
+        {localError ? (
           <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             {localError}
           </div>
-        )}
+        ) : null}
       </CardContent>
     </Card>
   );
 }
-
-export default RoomCard;

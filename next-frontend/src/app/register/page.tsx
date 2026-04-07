@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 
-// import { registerUser } from "@/lib/api/auth";
-// import { getErrorMessage } from "@/lib/utils/getErrorMessage";
+import { registerUser } from "@/app/api/auth";
+import { getErrorMessage } from "@/app/utils/getErrorMessage";
+import { RegisterFormData } from "@/app/types";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,12 +19,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-type RegisterFormData = {
-  fullName: string;
-  email: string;
-  password: string;
-};
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -44,15 +39,14 @@ export default function RegisterPage() {
   async function onSubmit(data: RegisterFormData) {
     try {
       setServerError("");
-
-      // await registerUser(data);
+      await registerUser(data);
 
       router.push(
         "/login?successMessage=" +
           encodeURIComponent("Registration successful. You can now log in."),
       );
     } catch (error: unknown) {
-      // setServerError(getErrorMessage(error));
+      setServerError(getErrorMessage(error));
     }
   }
 
