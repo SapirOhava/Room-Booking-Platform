@@ -45,8 +45,7 @@ model Booking {
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   room        Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
-  @@index([roomId])
-  @@index([userId])
+  @@index([userId, checkIn(sort: Desc)])
   @@index([roomId, checkIn, checkOut])
 }
 

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -90,5 +91,61 @@ export class BookingsService {
 
       throw error;
     }
+  }
+
+  async cancelBooking(userId: string, bookingId: string) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (booking.userId !== userId) {
+      throw new ForbiddenException('You do not own this booking');
+    }
+
+    if (booking.status === 'CANCELLED') {
+      throw new BadRequestException('Booking is already cancelled');
+    }
+
+    if (booking.checkIn <= new Date()) {
+      throw new BadRequestException(
+        'Cannot cancel a booking that has already started',
+      );
+    }
+
+    // atomic update — all conditions enforced at DB level
+    const updated = await this.prisma.booking.updateMany({
+      where: {
+        id: bookingId,
+        userId: userId,
+        status: { not: 'CANCELLED' },
+        checkIn: { gt: new Date() }, // ✅ date check inside the DB too
+      },
+      data: { status: 'CANCELLED' },
+    });
+
+    if (updated.count === 0) {
+      throw new BadRequestException('Booking could not be cancelled');
+    }
+  }
+
+  async getMyBookings(userId: string) {
+    return this.prisma.booking.findMany({
+      where: { userId },
+      orderBy: { checkIn: 'desc' },
+      include: {
+        room: {
+          select: {
+            id: true,
+            name: true,
+            city: true,
+            pricePerNight: true,
+          },
+        },
+      },
+    });
   }
 }
