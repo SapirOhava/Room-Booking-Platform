@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 
 import { getErrorMessage } from "@/app/utils/getErrorMessage";
 import { LoginFormData } from "@/app/types";
-
+import { loginUser } from "@/app/api/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,8 +40,9 @@ export default function LoginPage() {
   async function onSubmit(data: LoginFormData) {
     try {
       setServerError("");
-
+      await loginUser(data);
       router.push("/");
+      router.refresh(); // tells Next.js to re-fetch all server components for the current page, including the layout( and navbar )
     } catch (error: unknown) {
       setServerError(getErrorMessage(error));
     }
