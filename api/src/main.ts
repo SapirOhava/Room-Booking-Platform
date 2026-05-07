@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-
+import cookieParser from 'cookie-parser'; // later learn abot tsconfig and modules ..
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/errors/http-exception.filter';
 
@@ -12,7 +12,7 @@ async function bootstrap() {
     origin: 'http://localhost:3000',
     credentials: true,
   });
-
+  app.use(cookieParser());
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,

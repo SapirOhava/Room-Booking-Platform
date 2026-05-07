@@ -24,12 +24,12 @@ export class BookingsController {
   async createBooking(@Req() req: any, @Body() dto: CreateBookingDto) {
     return this.bookingsService.createBooking(req.user.id, dto);
   }
-
+  @UseGuards(JwtAuthGuard)
   @Get('my')
   async getMyBookings(@Req() req: any) {
     return this.bookingsService.getMyBookings(req.user.id);
   }
-
+  @UseGuards(JwtAuthGuard)
   @Patch(':id/cancel')
   async cancelBooking(@Req() req: any, @Param('id') id: string) {
     return this.bookingsService.cancelBooking(req.user.id, id);

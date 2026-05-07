@@ -5,9 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 
-import { loginUser } from "@/app/api/auth";
 import { getErrorMessage } from "@/app/utils/getErrorMessage";
-import { setToken } from "@/app/utils/token";
 import { LoginFormData } from "@/app/types";
 
 import { Button } from "@/components/ui/button";
@@ -42,9 +40,6 @@ export default function LoginPage() {
   async function onSubmit(data: LoginFormData) {
     try {
       setServerError("");
-
-      const response = await loginUser(data);
-      setToken(response.accessToken);
 
       router.push("/");
     } catch (error: unknown) {

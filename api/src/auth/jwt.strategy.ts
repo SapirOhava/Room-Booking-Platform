@@ -8,7 +8,10 @@ import { jwtConstants } from './constants';
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private readonly prisma: PrismaService) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (req) => req?.cookies?.access_token ?? null, // from cookie (browser requests)
+        ExtractJwt.fromAuthHeaderAsBearerToken(), // from header (server-side Next.js requests)
+      ]),
       ignoreExpiration: false,
       secretOrKey: jwtConstants.secret,
     });

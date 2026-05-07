@@ -70,6 +70,16 @@ export class BookingsService {
           checkOut: checkOutDate,
           totalPrice,
         },
+        include: {
+          room: {
+            select: {
+              id: true,
+              name: true,
+              city: true,
+              pricePerNight: true,
+            },
+          },
+        },
       });
     } catch (error: unknown) {
       const message =
@@ -117,7 +127,7 @@ export class BookingsService {
     }
 
     // atomic update — all conditions enforced at DB level
-    const updated = await this.prisma.booking.updateMany({
+    return this.prisma.booking.update({
       where: {
         id: bookingId,
         userId: userId,
@@ -125,11 +135,17 @@ export class BookingsService {
         checkIn: { gt: new Date() }, // ✅ date check inside the DB too
       },
       data: { status: 'CANCELLED' },
+      include: {
+        room: {
+          select: {
+            id: true,
+            name: true,
+            city: true,
+            pricePerNight: true,
+          },
+        },
+      },
     });
-
-    if (updated.count === 0) {
-      throw new BadRequestException('Booking could not be cancelled');
-    }
   }
 
   async getMyBookings(userId: string) {
