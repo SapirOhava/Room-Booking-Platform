@@ -30,6 +30,13 @@ export async function Navbar() {
               <span className="text-sm text-muted-foreground">
                 Hello, {user.fullName}
               </span>
+              <Link
+                href="/favorites"
+                className="text-xl leading-none"
+                aria-label="My favorites"
+              >
+                🤍
+              </Link>
               <NavbarLogoutButton />
             </>
           ) : (

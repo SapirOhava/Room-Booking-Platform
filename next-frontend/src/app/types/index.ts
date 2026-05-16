@@ -39,6 +39,7 @@ export type Room = {
   id: string;
   name: string;
   city: string;
+  imageUrl?: string | null;
   capacity: number;
   pricePerNight: number | string;
   description?: string | null;

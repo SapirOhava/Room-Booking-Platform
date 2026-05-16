@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 
 import { searchRooms } from "@/app/api/rooms";
 import { createBooking } from "@/app/api/bookings";
+import { getFavoriteIds, toggleFavorite } from "@/app/api/favorites";
 import { getErrorMessage } from "@/app/utils/getErrorMessage";
 
 import RoomCard from "@/components/rooms/RoomCard";
-import { Room } from "../types";
+import type { Room, SearchRoomsParams, CreateBookingData } from "../types";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,19 +17,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type BookingFormValues = {
-  checkIn: string;
-  checkOut: string;
-};
-
-type SearchRoomsParams = {
-  city?: string;
-  guests?: number;
-  minPrice?: number;
-  maxPrice?: number;
-};
-
-type CreateBookingData = {
-  roomId: string;
   checkIn: string;
   checkOut: string;
 };
@@ -42,6 +30,20 @@ export default function SearchPage() {
   const [bookingLoadingRoomId, setBookingLoadingRoomId] = useState<
     string | null
   >(null);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set()); //a Set instead of an array because you need to check favoriteIds.has(room.id) for every room card. Set.has() is O(1) — instant. Array.includes() is O(n)
+  const [isLoggedIn, setIsLoggedIn] = useState(false); //determines whether to show the heart button at all. Set to true if getFavoriteIds() succeeds, false if it throws a 401.- later change to true if getMe() succeeds. or if there's an access token in cookies.
+
+  useEffect(() => {
+    // runs once when the page first loads (the empty [] dependency array means "run once on mount"). Fetches the user's favorited room IDs silently. If it fails (user not logged in → 401), we just set isLoggedIn = false and move on — no error shown to the user.
+    getFavoriteIds()
+      .then((ids) => {
+        setFavoriteIds(new Set(ids));
+        setIsLoggedIn(true);
+      })
+      .catch(() => {
+        setIsLoggedIn(false);
+      });
+  }, []);
 
   const {
     register,
@@ -100,13 +102,25 @@ export default function SearchPage() {
       };
 
       await createBooking(bookingData);
-
       setBookingMessage("Booking created successfully.");
     } catch (error: unknown) {
       setBookingError(getErrorMessage(error));
     } finally {
       setBookingLoadingRoomId(null);
     }
+  }
+
+  async function handleToggleFavorite(roomId: string) {
+    const result = await toggleFavorite(roomId);
+    setFavoriteIds((prev) => {
+      const next = new Set(prev);
+      if (result.favorited) {
+        next.add(roomId);
+      } else {
+        next.delete(roomId);
+      }
+      return next;
+    });
   }
 
   return (
@@ -141,10 +155,7 @@ export default function SearchPage() {
                 placeholder="e.g. 2"
                 {...register("guests", {
                   valueAsNumber: true,
-                  min: {
-                    value: 1,
-                    message: "Guests must be at least 1",
-                  },
+                  min: { value: 1, message: "Guests must be at least 1" },
                 })}
               />
               {errors.guests ? (
@@ -161,10 +172,7 @@ export default function SearchPage() {
                 placeholder="e.g. 200"
                 {...register("minPrice", {
                   valueAsNumber: true,
-                  min: {
-                    value: 0,
-                    message: "Min price cannot be negative",
-                  },
+                  min: { value: 0, message: "Min price cannot be negative" },
                 })}
               />
               {errors.minPrice ? (
@@ -183,10 +191,7 @@ export default function SearchPage() {
                 placeholder="e.g. 800"
                 {...register("maxPrice", {
                   valueAsNumber: true,
-                  min: {
-                    value: 0,
-                    message: "Max price cannot be negative",
-                  },
+                  min: { value: 0, message: "Max price cannot be negative" },
                 })}
               />
               {errors.maxPrice ? (
@@ -247,6 +252,10 @@ export default function SearchPage() {
                   room={room}
                   isBooking={bookingLoadingRoomId === room.id}
                   onBook={handleBookRoom}
+                  isFavorited={favoriteIds.has(room.id)}
+                  onToggleFavorite={
+                    isLoggedIn ? handleToggleFavorite : undefined
+                  }
                 />
               ))}
             </div>

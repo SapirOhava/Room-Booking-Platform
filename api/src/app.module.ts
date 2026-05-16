@@ -10,6 +10,7 @@ import { RoomsModule } from './rooms/rooms.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
+import { FavoritesModule } from './favorites/favorites.module';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { HealthModule } from './health/health.module';
     BookingsModule,
     AuthModule,
     HealthModule,
-
+    FavoritesModule,
     ThrottlerModule.forRoot([
       {
         name: 'short',

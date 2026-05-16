@@ -23,12 +23,22 @@ type RoomCardProps = {
   room: Room;
   isBooking: boolean;
   onBook: (roomId: string, values: BookingFormValues) => Promise<void>;
+  isFavorited?: boolean;
+  onToggleFavorite?: (roomId: string) => Promise<void>;
 };
 
-export default function RoomCard({ room, isBooking, onBook }: RoomCardProps) {
+export default function RoomCard({
+  room,
+  isBooking,
+  onBook,
+  isFavorited = false,
+  onToggleFavorite,
+}: RoomCardProps) {
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [localError, setLocalError] = useState("");
+  const [favorited, setFavorited] = useState(isFavorited); // local copy of the heart state. You can't use isFavorited directly from props for the heart display because props are read-only
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false); // tracks whether an API call is currently in flight. Used to disable the button while waiting, so the user can't click it 5 times rapidly and send 5 requests.
 
   const handleSubmitBooking: SubmitEventHandler<HTMLFormElement> = async (
     e,
@@ -53,11 +63,43 @@ export default function RoomCard({ room, isBooking, onBook }: RoomCardProps) {
     }
   };
 
+  async function handleToggleFavorite() {
+    if (!onToggleFavorite || isTogglingFavorite) return;
+
+    setFavorited((prev) => !prev); // optimistic update — update UI immediately
+    setIsTogglingFavorite(true);
+
+    try {
+      await onToggleFavorite(room.id);
+    } catch {
+      setFavorited((prev) => !prev); // revert if API call failed
+    } finally {
+      setIsTogglingFavorite(false);
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{room.name}</CardTitle>
-        <CardDescription>{room.city}</CardDescription>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle>{room.name}</CardTitle>
+            <CardDescription>{room.city}</CardDescription>
+          </div>
+
+          {onToggleFavorite ? (
+            <button
+              onClick={handleToggleFavorite}
+              disabled={isTogglingFavorite}
+              className="text-xl leading-none text-red-500 transition-opacity disabled:opacity-50"
+              aria-label={
+                favorited ? "Remove from favorites" : "Add to favorites"
+              }
+            >
+              {favorited ? "❤️" : "🤍"}
+            </button>
+          ) : null}
+        </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -69,7 +111,6 @@ export default function RoomCard({ room, isBooking, onBook }: RoomCardProps) {
           <p>
             <span className="font-medium">Capacity:</span> {room.capacity}
           </p>
-
           {room.description ? (
             <p>
               <span className="font-medium">Description:</span>{" "}
