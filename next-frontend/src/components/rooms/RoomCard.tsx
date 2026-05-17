@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type SubmitEventHandler } from "react";
+import Image from "next/image";
 import type { Room } from "@/app/types";
 
 import { Button } from "@/components/ui/button";
@@ -79,7 +80,20 @@ export default function RoomCard({
   }
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
+      {room.imageUrl ? (
+        <div className="relative h-48 w-full">
+          <Image
+            src={room.imageUrl}
+            alt={room.name}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 700px"
+          />
+        </div>
+      ) : (
+        <div className="h-48 w-full bg-muted" />
+      )}
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>

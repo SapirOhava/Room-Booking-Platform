@@ -86,6 +86,44 @@ CI/CD fundamentals, ECR
 
 ---
 
+plan for this seconed step
+Phase 2 — Docker & CI/CD
+
+Here's what you need to build:
+
+1. Multi-stage Dockerfile for the API Your current Dockerfile runs start:dev which is wrong for production. You'll build a proper multi-stage file: builder stage compiles TypeScript → production stage runs the compiled JS with start:prod. No dev dependencies in production.
+
+2. Dockerfile for Next.js Similar multi-stage build for the frontend.
+
+3. Full docker-compose.yml Currently your compose only runs Postgres + Redis. You'll extend it to run the entire app — API + frontend + Postgres + Redis — so anyone can clone the repo and run one command to get everything working.
+
+4. GitHub Actions pipeline Automate: lint → test → build Docker image → push to AWS ECR. Every push to main triggers this.
+
+Suggested order:
+
+Fix the API Dockerfile first (most important, teaches multi-stage builds)
+Add Next.js Dockerfile
+Update docker-compose.yml to include all services
+GitHub Actions last
+Let me check what you currently have before we start.
+
+Good — now I can see exactly what needs to change. Here's the current state:
+
+Problems with the existing api/Dockerfile:
+
+Runs start:dev — this uses ts-node with file watching, not for production
+Single stage — dev dependencies and TypeScript compiler end up in the production image (bloated, insecure)
+EXPOSE 3000 — your API runs on 3001
+No .dockerignore — copies node_modules and other junk into the build context
+No prisma migrate deploy step — migrations don't run on startup
+What's missing entirely:
+
+Dockerfile for Next.js frontend
+API + frontend services in docker-compose.yml
+GitHub Actions workflow file
+
+---
+
 ### Phase 3 — Break into Microservices
 
 This is the most educational phase. The split follows your existing NestJS modules:
