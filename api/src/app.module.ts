@@ -40,7 +40,7 @@ import { FavoritesModule } from './favorites/favorites.module';
 
     CacheModule.registerAsync({
       isGlobal: true,
-      useFactory: async () => ({
+      useFactory: () => ({
         stores: [
           new Keyv({
             store: new KeyvRedis(
