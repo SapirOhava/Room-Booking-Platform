@@ -3,6 +3,16 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { jwtConstants } from './constants';
+import { Prisma } from '@prisma/client';
+
+const userSelect = {
+  id: true,
+  email: true,
+  fullName: true,
+  createdAt: true,
+} satisfies Prisma.UserSelect;
+// Export the derived type — automatically matches the select above
+export type AuthUser = Prisma.UserGetPayload<{ select: typeof userSelect }>;
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -20,12 +30,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: { sub: string; email: string }) {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        createdAt: true,
-      },
+      select: userSelect,
     });
 
     if (!user) {
