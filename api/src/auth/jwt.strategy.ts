@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { jwtConstants } from './constants';
 import { Prisma } from '@prisma/client';
+import type { Request } from 'express';
 
 const userSelect = {
   id: true,
@@ -19,7 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private readonly prisma: PrismaService) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (req) => req?.cookies?.access_token ?? null, // from cookie (browser requests)
+        (req: Request) => (req.cookies.access_token ?? null) as string | null, // from cookie (browser requests)
         ExtractJwt.fromAuthHeaderAsBearerToken(), // from header (server-side Next.js requests)
       ]),
       ignoreExpiration: false,

@@ -82,8 +82,7 @@ export class BookingsService {
         },
       });
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : String(error ?? '');
+      const message = error instanceof Error ? error.message : '';
 
       if (message.includes('booking_no_overlap')) {
         throw new BadRequestException({

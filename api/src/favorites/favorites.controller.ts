@@ -9,7 +9,10 @@ export class FavoritesController {
   constructor(private readonly favoritesService: FavoritesService) {}
 
   @Post(':roomId')
-  async toggleFavorite(@Req() req: AuthRequest, @Param('roomId') roomId: string) {
+  async toggleFavorite(
+    @Req() req: AuthRequest,
+    @Param('roomId') roomId: string,
+  ) {
     return this.favoritesService.toggleFavorite(req.user.id, roomId);
   }
 

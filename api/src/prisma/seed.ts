@@ -270,6 +270,12 @@ async function main() {
   console.log('💡 Login with: test@example.com / password123');
 }
 
-main().then(async () => {
-  await prisma.$disconnect();
-});
+main()
+  .then(async () => {
+    await prisma.$disconnect();
+  })
+  .catch(async (e) => {
+    console.error('Error seeding database ', e);
+    await prisma.$disconnect();
+    process.exit(1);
+  });
