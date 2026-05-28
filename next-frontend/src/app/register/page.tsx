@@ -1,28 +1,28 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
 
-import { registerUser } from "@/app/api/auth";
-import { getErrorMessage } from "@/app/utils/getErrorMessage";
-import { RegisterFormData } from "@/app/types";
+import { registerUser } from '@/app/api/auth';
+import { getErrorMessage } from '@/app/utils/getErrorMessage';
+import { RegisterFormData } from '@/app/types';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [serverError, setServerError] = useState("");
+  const [serverError, setServerError] = useState('');
 
   const {
     register,
@@ -30,20 +30,20 @@ export default function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormData>({
     defaultValues: {
-      fullName: "",
-      email: "",
-      password: "",
+      fullName: '',
+      email: '',
+      password: '',
     },
   });
 
   async function onSubmit(data: RegisterFormData) {
     try {
-      setServerError("");
+      setServerError('');
       await registerUser(data);
 
       router.push(
-        "/login?successMessage=" +
-          encodeURIComponent("Registration successful. You can now log in."),
+        '/login?successMessage=' +
+          encodeURIComponent('Registration successful. You can now log in.'),
       );
     } catch (error: unknown) {
       setServerError(getErrorMessage(error));
@@ -76,8 +76,8 @@ export default function RegisterPage() {
                 id="fullName"
                 type="text"
                 placeholder="Your full name"
-                {...register("fullName", {
-                  required: "Full name is required",
+                {...register('fullName', {
+                  required: 'Full name is required',
                 })}
               />
               {errors.fullName ? (
@@ -94,11 +94,11 @@ export default function RegisterPage() {
                 type="email"
                 placeholder="you@example.com"
                 autoComplete="email"
-                {...register("email", {
-                  required: "Email is required",
+                {...register('email', {
+                  required: 'Email is required',
                   pattern: {
                     value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "Please enter a valid email",
+                    message: 'Please enter a valid email',
                   },
                 })}
               />
@@ -114,11 +114,11 @@ export default function RegisterPage() {
                 type="password"
                 placeholder="Create a password"
                 autoComplete="new-password"
-                {...register("password", {
-                  required: "Password is required",
+                {...register('password', {
+                  required: 'Password is required',
                   minLength: {
                     value: 6,
-                    message: "Password must be at least 6 characters",
+                    message: 'Password must be at least 6 characters',
                   },
                 })}
               />
@@ -130,12 +130,12 @@ export default function RegisterPage() {
             </div>
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Creating account..." : "Register"}
+              {isSubmitting ? 'Creating account...' : 'Register'}
             </Button>
           </form>
 
           <p className="mt-4 text-sm text-muted-foreground">
-            Already have an account?{" "}
+            Already have an account?{' '}
             <Link
               href="/login"
               className="font-medium underline underline-offset-4"

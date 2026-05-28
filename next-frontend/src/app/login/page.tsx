@@ -1,30 +1,30 @@
-"use client";
+'use client';
 
-import { Suspense, useState } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { Suspense, useState } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useForm } from 'react-hook-form';
 
-import { getErrorMessage } from "@/app/utils/getErrorMessage";
-import { LoginFormData } from "@/app/types";
-import { loginUser } from "@/app/api/auth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { getErrorMessage } from '@/app/utils/getErrorMessage';
+import { LoginFormData } from '@/app/types';
+import { loginUser } from '@/app/api/auth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [serverError, setServerError] = useState("");
+  const [serverError, setServerError] = useState('');
 
-  const successMessage = searchParams.get("successMessage");
+  const successMessage = searchParams.get('successMessage');
 
   const {
     register,
@@ -32,16 +32,16 @@ function LoginForm() {
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     defaultValues: {
-      email: "",
-      password: "",
+      email: '',
+      password: '',
     },
   });
 
   async function onSubmit(data: LoginFormData) {
     try {
-      setServerError("");
+      setServerError('');
       await loginUser(data);
-      router.push("/");
+      router.push('/');
       router.refresh(); // tells Next.js to re-fetch all server components for the current page, including the layout( and navbar )
     } catch (error: unknown) {
       setServerError(getErrorMessage(error));
@@ -81,11 +81,11 @@ function LoginForm() {
                 type="email"
                 placeholder="you@example.com"
                 autoComplete="email"
-                {...register("email", {
-                  required: "Email is required",
+                {...register('email', {
+                  required: 'Email is required',
                   pattern: {
                     value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "Please enter a valid email",
+                    message: 'Please enter a valid email',
                   },
                 })}
               />
@@ -101,8 +101,8 @@ function LoginForm() {
                 type="password"
                 placeholder="Enter your password"
                 autoComplete="current-password"
-                {...register("password", {
-                  required: "Password is required",
+                {...register('password', {
+                  required: 'Password is required',
                 })}
               />
               {errors.password ? (
@@ -113,12 +113,12 @@ function LoginForm() {
             </div>
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Logging in..." : "Login"}
+              {isSubmitting ? 'Logging in...' : 'Login'}
             </Button>
           </form>
 
           <p className="mt-4 text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
+            Don&apos;t have an account?{' '}
             <Link
               href="/register"
               className="font-medium underline underline-offset-4"

@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useState, type SubmitEventHandler } from "react";
-import Image from "next/image";
-import type { Room } from "@/app/types";
+import { useState, type SubmitEventHandler } from 'react';
+import Image from 'next/image';
+import type { Room } from '@/app/types';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 
 type BookingFormValues = {
   checkIn: string;
@@ -35,9 +35,9 @@ export default function RoomCard({
   isFavorited = false,
   onToggleFavorite,
 }: RoomCardProps) {
-  const [checkIn, setCheckIn] = useState("");
-  const [checkOut, setCheckOut] = useState("");
-  const [localError, setLocalError] = useState("");
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
+  const [localError, setLocalError] = useState('');
   const [favorited, setFavorited] = useState(isFavorited); // local copy of the heart state. You can't use isFavorited directly from props for the heart display because props are read-only
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false); // tracks whether an API call is currently in flight. Used to disable the button while waiting, so the user can't click it 5 times rapidly and send 5 requests.
 
@@ -45,22 +45,22 @@ export default function RoomCard({
     e,
   ) => {
     e.preventDefault();
-    setLocalError("");
+    setLocalError('');
 
     if (!checkIn || !checkOut) {
-      setLocalError("Check-in and check-out are required.");
+      setLocalError('Check-in and check-out are required.');
       return;
     }
 
     if (new Date(checkOut) <= new Date(checkIn)) {
-      setLocalError("Check-out must be after check-in.");
+      setLocalError('Check-out must be after check-in.');
       return;
     }
 
     try {
       await onBook(room.id, { checkIn, checkOut });
     } catch {
-      setLocalError("Failed to create booking. Please try again.");
+      setLocalError('Failed to create booking. Please try again.');
     }
   };
 
@@ -107,10 +107,10 @@ export default function RoomCard({
               disabled={isTogglingFavorite}
               className="text-xl leading-none text-red-500 transition-opacity disabled:opacity-50"
               aria-label={
-                favorited ? "Remove from favorites" : "Add to favorites"
+                favorited ? 'Remove from favorites' : 'Add to favorites'
               }
             >
-              {favorited ? "❤️" : "🤍"}
+              {favorited ? '❤️' : '🤍'}
             </button>
           ) : null}
         </div>
@@ -119,7 +119,7 @@ export default function RoomCard({
       <CardContent className="space-y-4">
         <div className="space-y-1 text-sm">
           <p>
-            <span className="font-medium">Price per night:</span>{" "}
+            <span className="font-medium">Price per night:</span>{' '}
             {Number(room.pricePerNight).toFixed(2)}
           </p>
           <p>
@@ -127,7 +127,7 @@ export default function RoomCard({
           </p>
           {room.description ? (
             <p>
-              <span className="font-medium">Description:</span>{" "}
+              <span className="font-medium">Description:</span>{' '}
               {room.description}
             </p>
           ) : null}
@@ -159,7 +159,7 @@ export default function RoomCard({
 
           <div className="flex items-end">
             <Button type="submit" className="w-full" disabled={isBooking}>
-              {isBooking ? "Booking..." : "Book this room"}
+              {isBooking ? 'Booking...' : 'Book this room'}
             </Button>
           </div>
         </form>

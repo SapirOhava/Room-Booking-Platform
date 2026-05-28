@@ -52,7 +52,7 @@ export type CreateBookingData = {
   checkOut: string;
 };
 
-export type BookingStatus = "CONFIRMED" | "CANCELLED";
+export type BookingStatus = 'CONFIRMED' | 'CANCELLED';
 
 export type Booking = {
   id: string;

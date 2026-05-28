@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 
-import { searchRooms } from "@/app/api/rooms";
-import { createBooking } from "@/app/api/bookings";
-import { getFavoriteIds, toggleFavorite } from "@/app/api/favorites";
-import { getErrorMessage } from "@/app/utils/getErrorMessage";
+import { searchRooms } from '@/app/api/rooms';
+import { createBooking } from '@/app/api/bookings';
+import { getFavoriteIds, toggleFavorite } from '@/app/api/favorites';
+import { getErrorMessage } from '@/app/utils/getErrorMessage';
 
-import RoomCard from "@/components/rooms/RoomCard";
-import type { Room, SearchRoomsParams, CreateBookingData } from "../types";
+import RoomCard from '@/components/rooms/RoomCard';
+import type { Room, SearchRoomsParams, CreateBookingData } from '../types';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type BookingFormValues = {
   checkIn: string;
@@ -23,10 +23,10 @@ type BookingFormValues = {
 
 export default function SearchPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [serverError, setServerError] = useState("");
+  const [serverError, setServerError] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
-  const [bookingMessage, setBookingMessage] = useState("");
-  const [bookingError, setBookingError] = useState("");
+  const [bookingMessage, setBookingMessage] = useState('');
+  const [bookingError, setBookingError] = useState('');
   const [bookingLoadingRoomId, setBookingLoadingRoomId] = useState<
     string | null
   >(null);
@@ -51,7 +51,7 @@ export default function SearchPage() {
     formState: { errors, isSubmitting },
   } = useForm<SearchRoomsParams>({
     defaultValues: {
-      city: "",
+      city: '',
       guests: undefined,
       minPrice: undefined,
       maxPrice: undefined,
@@ -60,23 +60,23 @@ export default function SearchPage() {
 
   async function onSearch(data: SearchRoomsParams) {
     try {
-      setServerError("");
+      setServerError('');
       setHasSearched(true);
-      setBookingMessage("");
-      setBookingError("");
+      setBookingMessage('');
+      setBookingError('');
 
       const cleanParams: SearchRoomsParams = {
         city: data.city?.trim() || undefined,
         guests:
-          typeof data.guests === "number" && !Number.isNaN(data.guests)
+          typeof data.guests === 'number' && !Number.isNaN(data.guests)
             ? data.guests
             : undefined,
         minPrice:
-          typeof data.minPrice === "number" && !Number.isNaN(data.minPrice)
+          typeof data.minPrice === 'number' && !Number.isNaN(data.minPrice)
             ? data.minPrice
             : undefined,
         maxPrice:
-          typeof data.maxPrice === "number" && !Number.isNaN(data.maxPrice)
+          typeof data.maxPrice === 'number' && !Number.isNaN(data.maxPrice)
             ? data.maxPrice
             : undefined,
       };
@@ -91,8 +91,8 @@ export default function SearchPage() {
 
   async function handleBookRoom(roomId: string, values: BookingFormValues) {
     try {
-      setBookingMessage("");
-      setBookingError("");
+      setBookingMessage('');
+      setBookingError('');
       setBookingLoadingRoomId(roomId);
 
       const bookingData: CreateBookingData = {
@@ -102,7 +102,7 @@ export default function SearchPage() {
       };
 
       await createBooking(bookingData);
-      setBookingMessage("Booking created successfully.");
+      setBookingMessage('Booking created successfully.');
     } catch (error: unknown) {
       setBookingError(getErrorMessage(error));
     } finally {
@@ -142,7 +142,7 @@ export default function SearchPage() {
                 id="city"
                 type="text"
                 placeholder="e.g. Tel Aviv"
-                {...register("city")}
+                {...register('city')}
               />
             </div>
 
@@ -153,9 +153,9 @@ export default function SearchPage() {
                 type="number"
                 min="1"
                 placeholder="e.g. 2"
-                {...register("guests", {
+                {...register('guests', {
                   valueAsNumber: true,
-                  min: { value: 1, message: "Guests must be at least 1" },
+                  min: { value: 1, message: 'Guests must be at least 1' },
                 })}
               />
               {errors.guests ? (
@@ -170,9 +170,9 @@ export default function SearchPage() {
                 type="number"
                 min="0"
                 placeholder="e.g. 200"
-                {...register("minPrice", {
+                {...register('minPrice', {
                   valueAsNumber: true,
-                  min: { value: 0, message: "Min price cannot be negative" },
+                  min: { value: 0, message: 'Min price cannot be negative' },
                 })}
               />
               {errors.minPrice ? (
@@ -189,9 +189,9 @@ export default function SearchPage() {
                 type="number"
                 min="0"
                 placeholder="e.g. 800"
-                {...register("maxPrice", {
+                {...register('maxPrice', {
                   valueAsNumber: true,
-                  min: { value: 0, message: "Max price cannot be negative" },
+                  min: { value: 0, message: 'Max price cannot be negative' },
                 })}
               />
               {errors.maxPrice ? (
@@ -203,7 +203,7 @@ export default function SearchPage() {
 
             <div className="md:col-span-2">
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Searching..." : "Search"}
+                {isSubmitting ? 'Searching...' : 'Search'}
               </Button>
             </div>
           </form>

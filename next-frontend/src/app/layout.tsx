@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
-import { Navbar } from "@/components/layout/Navbar";
-import { Inter, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from 'next';
+import { Navbar } from '@/components/layout/Navbar';
+import { Inter, Geist_Mono } from 'next/font/google';
+import './globals.css';
 
 const inter = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
+  variable: '--font-sans',
+  subsets: ['latin'],
 });
 
 // Monospace fonts are usually useful for:
@@ -14,15 +14,15 @@ const inter = Inter({
 // - technical text
 // - fixed-width text
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
   // title shown in browser tab
-  title: "Room Booking App",
+  title: 'Room Booking App',
   // description used by search engines / previews
-  description: "Search and book rooms app by sapir ohava",
+  description: 'Search and book rooms app by sapir ohava',
 };
 
 // RootLayout - the root layout for the whole app

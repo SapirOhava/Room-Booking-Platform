@@ -1,4 +1,4 @@
-import api from "./axios";
+import api from './axios';
 
 type RegisterData = {
   email: string;
@@ -11,16 +11,16 @@ type LoginData = {
 };
 
 export async function registerUser(data: RegisterData) {
-  const response = await api.post("/auth/register", data);
+  const response = await api.post('/auth/register', data);
   return response.data;
 }
 
 export async function loginUser(data: LoginData) {
-  const response = await api.post("/auth/login", data);
+  const response = await api.post('/auth/login', data);
   return response.data;
 }
 
 export async function getMe() {
-  const response = await api.get("/auth/me");
+  const response = await api.get('/auth/me');
   return response.data;
 }

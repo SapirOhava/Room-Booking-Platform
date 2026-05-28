@@ -1,18 +1,18 @@
-import { cookies } from "next/headers";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { NavbarLogoutButton } from "@/components/layout/NavbarLogoutButton";
+import { cookies } from 'next/headers';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { NavbarLogoutButton } from '@/components/layout/NavbarLogoutButton';
 
 export async function Navbar() {
   const cookieStore = await cookies();
-  const token = cookieStore.get("access_token")?.value;
+  const token = cookieStore.get('access_token')?.value;
 
   let user = null;
   if (token) {
     try {
       const res = await fetch(`${process.env.API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store", // always fresh — don't cache auth state
+        cache: 'no-store', // always fresh — don't cache auth state
       });
       if (res.ok) user = await res.json();
     } catch {}

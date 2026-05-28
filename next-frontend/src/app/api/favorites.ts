@@ -1,5 +1,5 @@
-import api from "./axios";
-import type { Room } from "../types";
+import api from './axios';
+import type { Room } from '../types';
 
 export async function toggleFavorite(
   roomId: string,
@@ -9,11 +9,11 @@ export async function toggleFavorite(
 }
 
 export async function getFavorites(): Promise<Room[]> {
-  const response = await api.get("/favorites");
+  const response = await api.get('/favorites');
   return response.data;
 }
 
 export async function getFavoriteIds(): Promise<string[]> {
-  const response = await api.get("/favorites/ids");
+  const response = await api.get('/favorites/ids');
   return response.data;
 }

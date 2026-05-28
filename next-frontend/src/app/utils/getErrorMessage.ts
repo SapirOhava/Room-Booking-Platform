@@ -1,18 +1,18 @@
-import type { ApiErrorResponse } from "../types";
+import type { ApiErrorResponse } from '../types';
 
 export function getErrorMessage(error: unknown): string {
   const data = (error as { response?: { data?: ApiErrorResponse } })?.response
     ?.data;
 
   if (!data) {
-    return "Something went wrong. Please try again.";
+    return 'Something went wrong. Please try again.';
   }
 
-  if (typeof data.message === "string" && data.message.trim()) {
+  if (typeof data.message === 'string' && data.message.trim()) {
     return data.message;
   }
 
-  return "Something went wrong. Please try again.";
+  return 'Something went wrong. Please try again.';
 }
 
 // explanation - Axios errors are wrapped like this:

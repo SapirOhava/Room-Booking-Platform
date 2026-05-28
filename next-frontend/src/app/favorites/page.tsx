@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { getFavorites } from "@/app/api/favorites";
-import { getErrorMessage } from "@/app/utils/getErrorMessage";
-import type { Room } from "@/app/types";
+import { useState, useEffect } from 'react';
+import { getFavorites } from '@/app/api/favorites';
+import { getErrorMessage } from '@/app/utils/getErrorMessage';
+import type { Room } from '@/app/types';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 
 export default function FavoritesPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   useEffect(() => {
     getFavorites()
@@ -57,7 +57,7 @@ export default function FavoritesPage() {
           </CardHeader>
           <CardContent className="space-y-1 text-sm">
             <p>
-              <span className="font-medium">Price per night:</span>{" "}
+              <span className="font-medium">Price per night:</span>{' '}
               {Number(room.pricePerNight).toFixed(2)}
             </p>
             <p>
@@ -65,7 +65,7 @@ export default function FavoritesPage() {
             </p>
             {room.description ? (
               <p>
-                <span className="font-medium">Description:</span>{" "}
+                <span className="font-medium">Description:</span>{' '}
                 {room.description}
               </p>
             ) : null}
