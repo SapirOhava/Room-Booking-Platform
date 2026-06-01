@@ -1,5 +1,6 @@
 name: CI
 
+# Runs on every push to main and on every pull request targeting main
 on:
   push:
     branches: [main]
@@ -9,12 +10,15 @@ on:
 jobs:
   api:
     name: API — Lint, Test & Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # spins up a fresh Ubuntu VM for this job
 
     steps:
+      # Downloads your repository code into the VM so the rest of the steps can use it
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Installs the Node.js version defined in .nvmrc (currently 24)
+      # Also enables npm caching so dependencies aren't re-downloaded every run
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -22,22 +26,30 @@ jobs:
           cache: npm
           cache-dependency-path: api/package-lock.json
 
+      # Installs exact dependency versions from package-lock.json (clean install, no surprises)
       - name: Install dependencies
         run: npm ci
         working-directory: api
 
+      # Generates the Prisma TypeScript client from schema.prisma
+      # Required before lint/test because our types (AuthUser, etc.) depend on @prisma/client
       - name: Generate Prisma client
         run: npx prisma generate
         working-directory: api
 
+      # Runs ESLint + Prettier checks — fails the build if any lint errors exist
       - name: Lint
         run: npm run lint
         working-directory: api
 
+      # Runs all Jest unit tests — fails the build if any test fails
+      # Uses mocked Prisma so no real database is needed
       - name: Test
         run: npm test
         working-directory: api
 
+      # Builds the production Docker image to verify the Dockerfile is valid
+      # Does not push to a registry yet (that happens in Phase 5 with AWS ECR)
       - name: Build Docker image
         run: docker build -t room-booking-api ./api
 
@@ -46,9 +58,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Downloads your repository code into the VM
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Installs Node.js version from .nvmrc with npm caching enabled
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -56,14 +70,19 @@ jobs:
           cache: npm
           cache-dependency-path: next-frontend/package-lock.json
 
+      # Installs exact dependency versions from package-lock.json
       - name: Install dependencies
         run: npm ci
         working-directory: next-frontend
 
+      # Runs ESLint + Prettier checks on the Next.js app
       - name: Lint
         run: npm run lint
         working-directory: next-frontend
 
+      # Builds the production Docker image for the Next.js frontend
+      # NEXT_PUBLIC_API_URL is passed as a build argument because Next.js bakes
+      # public env vars into the client bundle at build time (not runtime)
       - name: Build Docker image
         run: |
           docker build \
