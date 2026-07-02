@@ -1,23 +1,33 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { PrismaModule } from '../prisma/prisma.module';
 import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { jwtConstants } from './constants';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
-    PrismaModule,
     PassportModule,
+    // register function creates the instance of the JwtService( the injection happens in the constructor of the AuthService)
     JwtModule.register({
       secret: jwtConstants.secret,
       signOptions: { expiresIn: '1h' },
     }),
+    // create a tcp client to the auth service
+    ClientsModule.register([
+      {
+        name: 'AUTH_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: '127.0.0.1',
+          port: 3002,
+        },
+      },
+    ]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService],
+  providers: [JwtStrategy],
+  exports: [],
 })
 export class AuthModule {}

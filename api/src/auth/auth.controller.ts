@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Inject,
   Post,
   Req,
   Res,
@@ -9,16 +10,20 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 
-import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import type { Response } from 'express';
 import type { AuthRequest } from '../common/types/auth-request.type';
+import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
 
+// @Inject with a string exists — to pick one specific instance out of multiple instances of the same class.
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
+  ) {}
 
   @Throttle({
     short: { limit: 2, ttl: 1000 },
@@ -26,7 +31,7 @@ export class AuthController {
   })
   @Post('register')
   async register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+    return firstValueFrom(this.authClient.send({ cmd: 'register' }, dto));
   }
 
   @Throttle({
@@ -38,7 +43,9 @@ export class AuthController {
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.login(dto);
+    const result = await firstValueFrom(
+      this.authClient.send({ cmd: 'login' }, dto),
+    );
     res.cookie('access_token', result.accessToken, {
       httpOnly: true, // JS cannot read it
       sameSite: 'lax', // protects against CSRF

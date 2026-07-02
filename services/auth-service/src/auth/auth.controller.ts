@@ -17,4 +17,9 @@ export class AuthController {
   login(@Payload() dto: LoginDto) {
     return this.authService.login(dto);
   }
+
+  @MessagePattern({ cmd: 'get_user_by_id' })
+  getUserById(@Payload() data: { id: string }) {
+    return this.authService.getUserById(data.id);
+  }
 }

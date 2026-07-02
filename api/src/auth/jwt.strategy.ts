@@ -1,23 +1,23 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { PrismaService } from '../prisma/prisma.service';
 import { jwtConstants } from './constants';
-import { Prisma } from '@prisma/client';
 import type { Request } from 'express';
+import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
 
-const userSelect = {
-  id: true,
-  email: true,
-  fullName: true,
-  createdAt: true,
-} satisfies Prisma.UserSelect;
-// Export the derived type — automatically matches the select above
-export type AuthUser = Prisma.UserGetPayload<{ select: typeof userSelect }>;
+export type AuthUser = {
+  id: string;
+  email: string;
+  fullName: string;
+  createdAt: Date;
+};
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (req: Request) => (req.cookies.access_token ?? null) as string | null, // from cookie (browser requests)
@@ -29,15 +29,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: { sub: string; email: string }) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: payload.sub },
-      select: userSelect,
-    });
-
-    if (!user) {
+    try {
+      return await firstValueFrom(
+        this.authClient.send({ cmd: 'get_user_by_id' }, { id: payload.sub }),
+      );
+    } catch {
       throw new UnauthorizedException('Invalid token');
     }
-
-    return user;
   }
 }

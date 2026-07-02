@@ -81,4 +81,22 @@ export class AuthService {
       },
     };
   }
+
+  async getUserById(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid token');
+    }
+
+    return user;
+  }
 }

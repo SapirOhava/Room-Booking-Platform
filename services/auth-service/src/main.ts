@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 // Transport — enum of available transport protocols (TCP, Redis, RabbitMQ etc)
 // MicroserviceOptions — TypeScript type that describes the config object shape
